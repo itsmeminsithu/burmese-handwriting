@@ -1,0 +1,8 @@
+# Runtime dataset created by the PHP API (see includes/helpers.php)
+data/attempts.json
+
+# Python bytecode from the demo scorer
+__pycache__/
+*.pyc
+
+.DS_Store
