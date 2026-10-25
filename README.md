@@ -1,42 +1,14 @@
 # မြန်မာစာ လက်ရေး Trainer
 
-Developer: **Min SiThu**  
-Version: **v0.3.0-php-python**  
-Status: **PHP + Python GitHub-ready prototype**
+Burmese handwriting practice app with a demo scorer. Version `v0.3.0-php-python`.
 
-A privacy-focused Burmese handwriting practice and dataset collection prototype.
+Developer: **Min SiThu**
 
-This project lets users practice Burmese consonants by drawing on a canvas. The browser sends the drawing to a PHP API, PHP calls a Python demo scorer, and the attempt is saved into a local JSON dataset for future machine learning research.
+Users draw a Burmese consonant on a canvas. The browser sends the drawing to a PHP endpoint, PHP calls a Python scorer, and the attempt is stored in a local JSON file. There is no account system and no external service: all data stays in `data/attempts.json` on the machine running the server.
 
-> Important: the current scorer is demo-only. It uses simple ink-coverage heuristics and stroke metadata. It is not yet an AI handwriting quality evaluator.
+The scorer is demo-only. It scores ink coverage, stroke count, and drawing duration on a 1–5 star scale. It does not recognise handwriting shape.
 
-## Tech Stack
-
-- PHP
-- Python 3
-- HTML
-- CSS
-- JavaScript Canvas API
-- JSON file storage
-
-## Features
-
-- Burmese consonant handwriting practice
-- Canvas drawing with mouse and touch support
-- Undo last stroke
-- Pen size selector
-- PHP API endpoints
-- Python demo scoring script
-- Local JSON dataset storage
-- Stroke count and drawing duration metadata
-- Progress dashboard
-- Export dataset as JSON
-- Burmese word examples
-- Example sentences
-- Myanmar quotes/proverbs
-- Quote of the Day
-
-## Project Structure
+## Project structure
 
 ```txt
 burmese-handwriting/
@@ -51,7 +23,8 @@ burmese-handwriting/
 │   └── helpers.php
 ├── scripts/
 │   ├── scorer.py
-│   └── dataset_summary.py
+│   ├── dataset_summary.py
+│   └── test_python_scorer.py
 ├── data/
 │   └── .gitkeep
 ├── css/
@@ -63,104 +36,61 @@ burmese-handwriting/
 │   ├── storage.js
 │   ├── wordExamples.js
 │   └── quotes.js
+├── .devcontainer/
+│   └── devcontainer.json
 ├── PROJECT_RECAP.md
 ├── ROADMAP.md
 ├── LICENSE
 └── .gitignore
 ```
 
-## Run Locally
+## Run locally
 
-Requirements:
-
-- PHP 8+
-- Python 3.9+
-
-Start the PHP dev server:
+Requirements: PHP 8+, Python 3.9+.
 
 ```bash
 php -S localhost:8000
 ```
 
-Open:
+Open `http://localhost:8000`.
 
-```txt
-http://localhost:8000
+## Live preview (GitHub Codespaces)
+
+GitHub Pages cannot run this app because it needs PHP and Python. The preview route is Codespaces:
+
+1. On GitHub, open **Code > Codespaces > Create codespace** (on `main` after this branch is merged; the devcontainer image provides PHP, and its setup step installs Python 3 if it is missing).
+2. In the Codespaces terminal, run:
+
+```bash
+php -S localhost:8000
 ```
 
-## How Scoring Works
+3. Open the forwarded port 8000 in the browser and draw a character to test scoring end to end.
 
-1. User draws a Burmese consonant on the canvas.
+Post-merge step still required: actually launch a Codespace and submit a drawing, to confirm the devcontainer and the `php -S` command work there. This PR does not claim a tested live URL.
+
+## How scoring works
+
+1. The user draws a Burmese consonant on the canvas.
 2. JavaScript sends the PNG image and metadata to `api/score.php`.
 3. PHP writes the PNG to a temporary file.
 4. PHP calls `scripts/scorer.py`.
-5. Python calculates ink coverage and combines it with stroke count/duration.
+5. Python calculates ink coverage and combines it with stroke count and duration.
 6. PHP returns a 1–5 star demo score.
 7. JavaScript sends the attempt to `api/save_attempt.php`.
 8. PHP saves the attempt to `data/attempts.json`.
 
-This gives a useful research workflow without claiming real handwriting recognition yet.
+## API endpoints
 
-## API Endpoints
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `/api/score.php` | POST | Score one drawing. Body: `char`, `roman`, `imageBase64` (PNG), `metadata` (`strokeCount`, `durationMs`, `canvasWidth`, `canvasHeight`, `penSize`). |
+| `/api/save_attempt.php` | POST | Save one scored attempt to `data/attempts.json`. |
+| `/api/stats.php` | GET | Return progress stats. |
+| `/api/export.php` | GET | Download the dataset JSON. |
+| `/api/clear.php` | POST | Clear the local dataset. |
 
-### `POST /api/score.php`
-
-Scores one drawing using the Python demo scorer.
-
-Request:
-
-```json
-{
-  "char": "က",
-  "roman": "ka",
-  "imageBase64": "PNG_BASE64_DATA",
-  "metadata": {
-    "strokeCount": 3,
-    "durationMs": 4200,
-    "canvasWidth": 320,
-    "canvasHeight": 320,
-    "penSize": 5
-  }
-}
-```
-
-### `POST /api/save_attempt.php`
-
-Saves one scored attempt into `data/attempts.json`.
-
-### `GET /api/stats.php`
-
-Returns progress stats.
-
-### `GET /api/export.php`
-
-Downloads the dataset JSON.
-
-### `POST /api/clear.php`
-
-Clears the local dataset. Use carefully.
-
-## Dataset Target
-
-Minimum:
-
-```txt
-33 consonants × 15 samples = 495 samples
-```
-
-Better:
-
-```txt
-33 consonants × 30 samples = 990 samples
-```
-
-Strong early target:
-
-```txt
-1,000–3,000 samples
-```
-
-## Python Dataset Summary
+## Dataset summary
 
 After collecting attempts, run:
 
@@ -168,30 +98,12 @@ After collecting attempts, run:
 python3 scripts/dataset_summary.py
 ```
 
-## Research Direction
-
-This can become a university thesis project:
-
-1. Burmese handwriting data collection tool
-2. Burmese consonant handwriting dataset
-3. Human-labeled handwriting quality scores
-4. Baseline image similarity scorer
-5. CNN or TensorFlow.js model
-6. Human score vs ML score comparison
+Collection targets stated in the project docs: 33 consonants × 15 samples = 495 minimum; × 30 samples = 990; a strong early target is 1,000–3,000 samples.
 
 ## Roadmap
 
-- [x] Phase 1 — Local web app with demo scorer
-- [x] Phase 1.5 — Word examples, sentences, and Myanmar quotes/proverbs
-- [x] Phase 2 draft — PHP + Python backend structure
-- [ ] Data collection page for minsithu.org
-- [ ] Consent checkbox and anonymous participant ID
-- [ ] Human review dashboard
-- [ ] Human-labeled handwriting dataset
-- [ ] Baseline shape similarity scorer
-- [ ] CNN / TensorFlow.js model
-- [ ] React Native mobile app
+See `ROADMAP.md` for completed phases and next steps (data-collection page, consent and participant ID, human review, labelled dataset, baseline shape scorer).
 
 ## License
 
-MIT License
+MIT — see `LICENSE`.
